@@ -112,8 +112,9 @@ class Index extends Action
 
             /**
              * Prepare Layer and pass collection.
+             * Disabled to support magento 2.3.4
              */
-            $this->layerResolver->create('search');
+            //$this->layerResolver->create('search');
             
             $collection = $this->layerResolver->get()->getProductCollection();
             
