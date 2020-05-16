@@ -13,6 +13,7 @@ Brands main page and individual brand have clean url. You can also specify meta 
 
 ### Installation
 ```sh
+$ b
 $ composer require mage360/brands
 $ composer update
 $ php bin/magento setup:upgrade
