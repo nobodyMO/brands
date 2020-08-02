@@ -111,10 +111,9 @@ class Index extends Action
             $attributeCode = $attr->getAttributeCode();
 
             /**
-             * Prepare Layer and pass collection.
-             * Disabled to support magento 2.3.4
+             * Need to fix vendor\magento\module-elasticsearch\Model\ResourceModel\Fulltext\Collection\SearchResultApplier.php apply method where from NULL to 1=1
              */
-            //$this->layerResolver->create('search');
+            $this->layerResolver->create('search');
             
             $collection = $this->layerResolver->get()->getProductCollection();
             
