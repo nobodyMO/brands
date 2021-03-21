@@ -27,7 +27,13 @@ use Magento\Store\Model\ScopeInterface;
 use Magento\Catalog\Model\Layer\Resolver;
 use Mage360\Brands\Model\Brands;
 use Mage360\Brands\Model\ResourceModel\Brands\CollectionFactory as BrandsCollectionFactory;
+use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Mage360\Brands\Model\Source\Attributevalue;
+
+
+use Zend\Log\Writer\Stream;
+use Zend\Log\Logger;
+
 
 class Index extends Action
 {
@@ -52,9 +58,16 @@ class Index extends Action
     public $brandsCollectionFactory;
 
     /**
+     * @var ProductCollectionFactory
+     */
+    public $productCollectionFactory;
+
+    /**
      * @var Attributevalue
      */
     public $attributevalue;
+	
+	
 
     /**
      *
@@ -62,6 +75,11 @@ class Index extends Action
      * @param PageFactory          $resultPageFactory
      * @param ScopeConfigInterface $scopeConfig
      * @param Resolver             $layerResolver
+     * @param BrandsCollectionFactory  $brandsCollectionFactory
+     * @param ProductCollectionFactory  $productCollectionFactory
+	 
+     * @param Attributevalue     $attributevalue
+     * @param Search             $cHelper
      */
     public function __construct(
         Context $context,
@@ -69,7 +87,9 @@ class Index extends Action
         ScopeConfigInterface $scopeConfig,
         Resolver $layerResolver,
         BrandsCollectionFactory $brandsCollectionFactory,
+        ProductCollectionFactory $productCollectionFactory,
         Attributevalue $attributevalue
+		
     ) {
 
         parent::__construct($context);
@@ -81,8 +101,9 @@ class Index extends Action
         $this->layerResolver = $layerResolver;
 
         $this->brandsCollectionFactory = $brandsCollectionFactory;
-
+		$this->productCollectionFactory = $productCollectionFactory;
         $this->attributevalue = $attributevalue;
+		
     }
 
     public function execute()
@@ -115,10 +136,13 @@ class Index extends Action
              */
             $this->layerResolver->create('search');
             
-            $collection = $this->layerResolver->get()->getProductCollection();
-            
-            $collection->addAttributeToFilter($attributeCode, $brand->getAttributeId());
-
+            //$collection = $this->layerResolver->get()->getProductCollection();
+			$collection = $this->productCollectionFactory->create();
+			$collection->addAttributeToSelect('*');
+			
+			$collection->addAttributeToFilter($attributeCode, $brand->getAttributeId());
+			$collection->getSelect()->order('is_salable DESC');
+			
             $list = $result->getLayout()->getBlock('custom.products.list');
             
             $list->setProductCollection($collection);
@@ -204,4 +228,12 @@ class Index extends Action
             ->setOrder('name', 'ASC');
         return $collection;
     }
+	
+	public function printLog($log) {
+       $writer = new Stream(BP . '/var/log/brand.log');
+       $logger = new Logger();
+       $logger->addWriter($writer);
+       $logger->info($log);
+	}	
+		
 }
