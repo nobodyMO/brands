@@ -29,6 +29,7 @@ use Mage360\Brands\Model\Brands;
 use Mage360\Brands\Model\ResourceModel\Brands\CollectionFactory as BrandsCollectionFactory;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Mage360\Brands\Model\Source\Attributevalue;
+use Magento\Store\Model\StoreManagerInterface;
 
 
 use Zend\Log\Writer\Stream;
@@ -57,6 +58,12 @@ class Index extends Action
      */
     public $brandsCollectionFactory;
 
+
+   /**
+     * @var StoreManagerInterface 
+     */
+	protected $storeManager;
+
     /**
      * @var ProductCollectionFactory
      */
@@ -77,7 +84,7 @@ class Index extends Action
      * @param Resolver             $layerResolver
      * @param BrandsCollectionFactory  $brandsCollectionFactory
      * @param ProductCollectionFactory  $productCollectionFactory
-	 
+     * @param StoreManagerInterface  $storeManager 
      * @param Attributevalue     $attributevalue
      * @param Search             $cHelper
      */
@@ -88,6 +95,7 @@ class Index extends Action
         Resolver $layerResolver,
         BrandsCollectionFactory $brandsCollectionFactory,
         ProductCollectionFactory $productCollectionFactory,
+		StoreManagerInterface $storeManager, 
         Attributevalue $attributevalue
 		
     ) {
@@ -103,6 +111,7 @@ class Index extends Action
         $this->brandsCollectionFactory = $brandsCollectionFactory;
 		$this->productCollectionFactory = $productCollectionFactory;
         $this->attributevalue = $attributevalue;
+		$this->storeManager = $storeManager;  
 		
     }
 
@@ -139,7 +148,7 @@ class Index extends Action
             //$collection = $this->layerResolver->get()->getProductCollection();
 			$collection = $this->productCollectionFactory->create();
 			$collection->addAttributeToSelect('*');
-			
+			$collection->addStoreFilter($this->storeManager->getStore());
 			$collection->addAttributeToFilter($attributeCode, $brand->getAttributeId());
 			$collection->getSelect()->order('is_salable DESC');
 			
