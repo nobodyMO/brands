@@ -135,7 +135,7 @@ class Index extends Action
          */
         $brand = $this->getBrandDetails($brand_key[0]);
 
-        if (!empty($brand->getBrandId())) {
+        if (!is_null($brand) && !empty($brand->getBrandId())) {
             $attr = $this->attributevalue->getAttribute();
 
             $attributeCode = $attr->getAttributeCode();
