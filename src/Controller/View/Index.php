@@ -32,9 +32,6 @@ use Mage360\Brands\Model\Source\Attributevalue;
 use Magento\Store\Model\StoreManagerInterface;
 
 
-use Zend\Log\Writer\Stream;
-use Zend\Log\Logger;
-
 
 class Index extends Action
 {
@@ -237,12 +234,6 @@ class Index extends Action
             ->setOrder('name', 'ASC');
         return $collection;
     }
-	
-	public function printLog($log) {
-       $writer = new Stream(BP . '/var/log/brand.log');
-       $logger = new Logger();
-       $logger->addWriter($writer);
-       $logger->info($log);
-	}	
+		
 		
 }
