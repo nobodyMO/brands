@@ -16,7 +16,7 @@
   ],
   "require": {
     "php": "~7.3.0|~7.4.0",
-    "magento/product-community-edition": "^2.4.4"
+    "magento/product-community-edition": "^2.4.3"
   },
   "autoload": {
     "files": [ "src/registration.php" ],
