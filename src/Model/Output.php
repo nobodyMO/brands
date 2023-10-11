@@ -15,15 +15,15 @@ namespace Mage360\Brands\Model;
 class Output
 {
     /**
-     * @var \Zend_Filter_Interface
+     * @var \Magento\Widget\Model\Template\Filter\Interceptor
      */
     public $templateProcessor;
 
     /**
-     * @param \Zend_Filter_Interface $templateProcessor
+     * @param \Magento\Widget\Model\Template\Filter\Interceptor $templateProcessor
      */
     public function __construct(
-        \Zend_Filter_Interface $templateProcessor
+        \Magento\Widget\Model\Template\Filter\Interceptor $templateProcessor
     ) {
         $this->templateProcessor = $templateProcessor;
     }
