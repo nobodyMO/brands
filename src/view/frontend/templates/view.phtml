@@ -2,7 +2,7 @@
 <div class="mage360-brands-wrapper">
     <div class="brand">
         <div class="brand-img">
-            <?php  if(!empty($brand->getLogoPathUrl())): ?>
+            <?php  if(is_null ($brand) ==false && !empty($brand->getLogoPathUrl())): ?>
                 <img src="<?php echo $brand->getLogoPathUrl(); ?>" alt="<?php echo $brand->getName(); ?>" />
             <?php endif; ?>
         </div>
