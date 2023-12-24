@@ -71,6 +71,11 @@ class Index extends Action
      */
     public $attributevalue;
 	
+
+   /**
+     * @var \ProductCollectionFactory\Magento\Catalog\Model\Product\Attribute\Source\Status 
+     */
+	protected $productStatus;
 	
 
     /**
@@ -81,6 +86,7 @@ class Index extends Action
      * @param Resolver             $layerResolver
      * @param BrandsCollectionFactory  $brandsCollectionFactory
      * @param ProductCollectionFactory  $productCollectionFactory
+	 * @param \ProductCollectionFactory\Magento\Catalog\Model\Product\Attribute\Source\Status $productStatus,
      * @param StoreManagerInterface  $storeManager 
      * @param Attributevalue     $attributevalue
      * @param Search             $cHelper
@@ -93,6 +99,7 @@ class Index extends Action
         BrandsCollectionFactory $brandsCollectionFactory,
         ProductCollectionFactory $productCollectionFactory,
 		StoreManagerInterface $storeManager, 
+		\Magento\Catalog\Model\Product\Attribute\Source\Status $productStatus,
         Attributevalue $attributevalue
 		
     ) {
@@ -109,6 +116,7 @@ class Index extends Action
 		$this->productCollectionFactory = $productCollectionFactory;
         $this->attributevalue = $attributevalue;
 		$this->storeManager = $storeManager;  
+		$this->productStatus = $productStatus;
 		
     }
 
@@ -147,6 +155,7 @@ class Index extends Action
 			$collection->addAttributeToSelect('*');
 			$collection->addStoreFilter($this->storeManager->getStore());
 			$collection->addAttributeToFilter($attributeCode, $brand->getAttributeId());
+			$collection->addAttributeToFilter('status', ['in' => $this->productStatus->getVisibleStatusIds()]);
 			$collection->getSelect()->order('is_salable DESC');
 			
             $list = $result->getLayout()->getBlock('custom.products.list');
