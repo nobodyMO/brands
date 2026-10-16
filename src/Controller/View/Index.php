@@ -19,34 +19,32 @@ declare(strict_types=1);
 
 namespace Mage360\Brands\Controller\View;
 
+use Magento\Catalog\Model\Layer\Resolver;
 use Magento\Framework\App\Action\Action;
 use Magento\Framework\App\Action\Context;
-use Magento\Framework\View\Result\PageFactory;
 use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Controller\ResultFactory;
+use Magento\Framework\View\Result\PageFactory;
 use Magento\Store\Model\ScopeInterface;
-use Magento\Catalog\Model\Layer\Resolver;
+use Magento\Store\Model\StoreManagerInterface;
 use Mage360\Brands\Model\Brands;
 use Mage360\Brands\Model\ResourceModel\Brands\CollectionFactory as BrandsCollectionFactory;
-use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Mage360\Brands\Model\Source\Attributevalue;
-use Magento\Store\Model\StoreManagerInterface;
-
-
 
 class Index extends Action
 {
     /**
-     * @var \Magento\Framework\App\Config\ScopeConfigInterface
+     * @var ScopeConfigInterface
      */
     public $scopeConfig;
 
     /**
-     * @var \Magento\Framework\View\Result\PageFactory
+     * @var PageFactory
      */
     public $resultPageFactory;
 
     /**
-     * @var \Magento\Catalog\Model\Layer\Resolver
+     * @var Resolver
      */
     public $layerResolver;
 
@@ -55,41 +53,24 @@ class Index extends Action
      */
     public $brandsCollectionFactory;
 
-
-   /**
-     * @var StoreManagerInterface 
-     */
-	protected $storeManager;
-
-    /**
-     * @var ProductCollectionFactory
-     */
-    public $productCollectionFactory;
-
     /**
      * @var Attributevalue
      */
     public $attributevalue;
-	
-
-   /**
-     * @var \ProductCollectionFactory\Magento\Catalog\Model\Product\Attribute\Source\Status 
-     */
-	protected $productStatus;
-	
 
     /**
-     *
-     * @param Context              $context
-     * @param PageFactory          $resultPageFactory
-     * @param ScopeConfigInterface $scopeConfig
-     * @param Resolver             $layerResolver
-     * @param BrandsCollectionFactory  $brandsCollectionFactory
-     * @param ProductCollectionFactory  $productCollectionFactory
-	 * @param \ProductCollectionFactory\Magento\Catalog\Model\Product\Attribute\Source\Status $productStatus,
-     * @param StoreManagerInterface  $storeManager 
-     * @param Attributevalue     $attributevalue
-     * @param Search             $cHelper
+     * @var StoreManagerInterface
+     */
+    protected $storeManager;
+
+    /**
+     * @param Context                 $context
+     * @param PageFactory             $resultPageFactory
+     * @param ScopeConfigInterface    $scopeConfig
+     * @param Resolver                $layerResolver
+     * @param BrandsCollectionFactory $brandsCollectionFactory
+     * @param StoreManagerInterface   $storeManager
+     * @param Attributevalue          $attributevalue
      */
     public function __construct(
         Context $context,
@@ -97,152 +78,141 @@ class Index extends Action
         ScopeConfigInterface $scopeConfig,
         Resolver $layerResolver,
         BrandsCollectionFactory $brandsCollectionFactory,
-        ProductCollectionFactory $productCollectionFactory,
-		StoreManagerInterface $storeManager, 
-		\Magento\Catalog\Model\Product\Attribute\Source\Status $productStatus,
+        StoreManagerInterface $storeManager,
         Attributevalue $attributevalue
-		
     ) {
-
         parent::__construct($context);
 
         $this->resultPageFactory = $resultPageFactory;
-
         $this->scopeConfig = $scopeConfig;
-
         $this->layerResolver = $layerResolver;
-
         $this->brandsCollectionFactory = $brandsCollectionFactory;
-		$this->productCollectionFactory = $productCollectionFactory;
+        $this->storeManager = $storeManager;
         $this->attributevalue = $attributevalue;
-		$this->storeManager = $storeManager;  
-		$this->productStatus = $productStatus;
-		
     }
 
     public function execute()
     {
+        $brand = $this->getBrandDetails($this->resolveUrlKey());
+        $attributeCode = null;
+
+        if ($brand !== null && !empty($brand->getBrandId()) && $brand->getAttributeId()) {
+            $attributeCode = $this->attributevalue->getAttribute()->getAttributeCode();
+        }
+
+        /**
+         * Unknown/inactive brand or no brand attribute configured:
+         * show the regular 404 page instead of rendering a half-empty layout.
+         */
+        if ($brand === null || empty($attributeCode)) {
+            return $this->resultFactory->create(ResultFactory::TYPE_FORWARD)->forward('noroute');
+        }
+
+        /**
+         * The layer has to be set up BEFORE the layout is built (first getLayout() call below),
+         * because the layered navigation and the product list resolve the layer in their constructors.
+         *
+         * Product list and layered navigation share ONE product collection (the one of the category layer,
+         * backed by the search engine). The brand is applied as an additional attribute filter on it,
+         * so the filters in the sidebar always match the products shown in the list.
+         * This replaces the former hand-built DB collection and the vendor patch of SearchResultApplier.
+         */
+        $this->layerResolver->create(Resolver::CATALOG_LAYER_CATEGORY);
+        $layer = $this->layerResolver->get();
+        $layer->setCurrentCategory($this->storeManager->getStore()->getRootCategoryId());
+        $layer->getProductCollection()->addFieldToFilter($attributeCode, $brand->getAttributeId());
 
         $result = $this->resultPageFactory->create();
 
-        $url = $this->_url->getCurrentUrl();
+        $brandBlock = $result->getLayout()->getBlock('Brands.Brand');
+        if ($brandBlock) {
+            /**
+             * pass $brand to the block so it's accessible in phtml.
+             */
+            $brandBlock->setBrand($brand);
+        }
 
-        $urlKey = "brand";
         /**
-         * get url key from the url.
+         * Set Title and Meta description and keywords.
          */
-        preg_match('/'.$urlKey.'\/(.*)/', $url, $matches);
-        
-        $brand_key = explode(".", $matches[1]);
-        
-        /**
-         * Get brand by url key
-         */
-        $brand = $this->getBrandDetails($brand_key[0]);
+        $result->getConfig()->getTitle()->set($brand->getName());
+        $result->getConfig()->setDescription((string)$brand->getSeoDesc());
+        $result->getConfig()->setKeywords((string)$brand->getSeoKeyword());
 
-        if (!is_null($brand) && !empty($brand->getBrandId())) {
-            $attr = $this->attributevalue->getAttribute();
-
-            $attributeCode = $attr->getAttributeCode();
-
+        if ($this->scopeConfig->isSetFlag(Brands::CONFIG_BREADCRUMB, ScopeInterface::SCOPE_STORE)) {
             /**
-             * Need to fix vendor\magento\module-elasticsearch\Model\ResourceModel\Fulltext\Collection\SearchResultApplier.php apply method where from NULL to 1=1
+             * @var \Magento\Theme\Block\Html\Breadcrumbs $breadcrumbsBlock
              */
-            $this->layerResolver->create('search');
-            
-            //$collection = $this->layerResolver->get()->getProductCollection();
-			$collection = $this->productCollectionFactory->create();
-			$collection->addAttributeToSelect('*');
-			$collection->addStoreFilter($this->storeManager->getStore());
-			$collection->addAttributeToFilter($attributeCode, $brand->getAttributeId());
-			$collection->addAttributeToFilter('status', ['in' => $this->productStatus->getVisibleStatusIds()]);
-			$collection->getSelect()->order('is_salable DESC');
-			
-            $list = $result->getLayout()->getBlock('custom.products.list');
-            
-            $list->setProductCollection($collection);
-            
-            /**
-             * pass $brands to the block so it's accessible in pthml.
-             */
-            $result->getLayout()->getBlock('Brands.Brand')->setBrand($brand);
-            
-            /**
-             * Set Title and Meta description and keywords.
-             */
-            $result->getConfig()->getTitle()->set(
-                $brand->getName()
-            );
-            
-            $result->getConfig()->setDescription(
-                $brand->getSeoDesc()
-            );
-            
-            $result->getConfig()->setKeywords(
-                $brand->getSeoKeyword()
-            );
-            
-            if ($this->scopeConfig->isSetFlag(Brands::CONFIG_BREADCRUMB, ScopeInterface::SCOPE_STORE)) {
-                /**
-                 * @var \Magento\Theme\Block\Html\Breadcrumbs $breadcrumbsBlock
-                 */
-                $breadcrumbsBlock = $result->getLayout()->getBlock('breadcrumbs');
-                if ($breadcrumbsBlock) {
-                    $breadcrumbsBlock->addCrumb(
-                        'home',
-                        [
-                            'label'    => __('Home'),
-                            'link'     => $this->_url->getUrl('')
-                        ]
-                    );
-                    $breadcrumbsBlock->addCrumb(
-                        'brands_home',
-                        [
-                            'link'     => $this->_url->getUrl(
-                                $this->scopeConfig->getValue(Brands::CONFIG_MAIN_URL_KEY, ScopeInterface::SCOPE_STORE)
-                            ),
-                            'label'    => $this->scopeConfig->getValue(
-                                Brands::CONFIG_MENU_TITLE,
-                                ScopeInterface::SCOPE_STORE
-                            ),
-                        ]
-                    );
-                    $breadcrumbsBlock->addCrumb(
-                        'brand',
-                        [
-                            'label'    => $brand->getName(),
-                        ]
-                    );
-                }
+            $breadcrumbsBlock = $result->getLayout()->getBlock('breadcrumbs');
+            if ($breadcrumbsBlock) {
+                $breadcrumbsBlock->addCrumb(
+                    'home',
+                    [
+                        'label' => __('Home'),
+                        'link'  => $this->_url->getUrl('')
+                    ]
+                );
+                $breadcrumbsBlock->addCrumb(
+                    'brands_home',
+                    [
+                        'link'  => $this->_url->getUrl(
+                            $this->scopeConfig->getValue(Brands::CONFIG_MAIN_URL_KEY, ScopeInterface::SCOPE_STORE)
+                        ),
+                        'label' => $this->scopeConfig->getValue(
+                            Brands::CONFIG_MENU_TITLE,
+                            ScopeInterface::SCOPE_STORE
+                        ),
+                    ]
+                );
+                $breadcrumbsBlock->addCrumb(
+                    'brand',
+                    [
+                        'label' => $brand->getName(),
+                    ]
+                );
             }
         }
-        
+
         return $result;
     }
 
     /**
-     *  return brand data
+     * Extract the brand url key from the requested url (/brand/<url_key>.html).
+     * The URL rewrite maps it to brands/view/index, so the original request URL is used.
      *
-     * @return array
+     * @return string|null
+     */
+    private function resolveUrlKey()
+    {
+        $path = (string)parse_url((string)$this->_url->getCurrentUrl(), PHP_URL_PATH);
+
+        if (preg_match('#/' . preg_quote(Brands::URL_PREFIX, '#') . '/([^/]+?)(?:\.html)?/?$#', $path, $matches)) {
+            return rawurldecode($matches[1]);
+        }
+
+        return null;
+    }
+
+    /**
+     * Return the active brand for the given url key or null.
+     *
+     * @param string|null $urlKey
+     * @return Brands|null
      */
     private function getBrandDetails($urlKey)
     {
-        $collection = $this->getBrand($urlKey);
-        foreach ($collection as $brand) {
-            return $brand;
+        if ($urlKey === null || $urlKey === '') {
+            return null;
         }
-    }
-
-    private function getBrand($urlKey)
-    {
 
         $collection = $this->brandsCollectionFactory->create()
             ->addFieldToSelect('*')
             ->addFieldToFilter('is_active', Brands::STATUS_ENABLED)
             ->addFieldToFilter('url_key', $urlKey)
-            ->setOrder('name', 'ASC');
-        return $collection;
+            ->setPageSize(1);
+
+        $brand = $collection->getFirstItem();
+
+        return $brand && $brand->getId() ? $brand : null;
     }
-		
-		
 }
