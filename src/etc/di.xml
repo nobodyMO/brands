@@ -74,11 +74,6 @@
             </argument>
         </arguments>
     </type>
-    <type name="Mage360\Brands\Model\Image">
-        <arguments>
-            <argument name="uploader" xsi:type="object">Mage360BrandsImageUploader</argument>
-        </arguments>
-    </type>
     <virtualType name="Mage360BrandsModelSourceStatus" type="Mage360\Brands\Model\Source\Options">
         <arguments>
             <argument name="options" xsi:type="array">
@@ -93,28 +88,10 @@
             </argument>
         </arguments>
     </virtualType>
-    <type name="Magento\Catalog\Model\Layer\Resolver">
-        <arguments>
-            <argument name="layersPool" xsi:type="array">
-                <item name="category" xsi:type="string">Magento\Catalog\Model\Layer\Category</item>
-                <item name="search" xsi:type="string">Magento\Catalog\Model\Layer\Search</item>
-                <item name="customlayer" xsi:type="string">Mage360\Brands\Model\Layer</item>
-            </argument>
-        </arguments>
-    </type>
-    <virtualType name="brandsProductFilterList" type="Mage360\Brands\Model\Layer\FilterList">
-        <arguments>
-            <argument name="filterableAttributes" xsi:type="object">Mage360\Brands\Model\Layer\FilterableAttributeList</argument>
-            <argument name="filters" xsi:type="array">
-                <item name="attribute" xsi:type="string">Mage360\Brands\Model\Layer\Filter\Attribute</item>
-                <item name="category" xsi:type="string">Mage360\Brands\Model\Layer\Filter\Category</item>
-            </argument>
-        </arguments>
-    </virtualType>
-
+    <!-- Layered navigation of the brand page uses the standard (search engine based) category filter list -->
     <virtualType name="Mage360\Brands\Block\Navigation\Brandsproductnavigation" type="Magento\LayeredNavigation\Block\Navigation">
         <arguments>
-            <argument name="filterList" xsi:type="object">brandsProductFilterList</argument>
+            <argument name="filterList" xsi:type="object">categoryFilterList</argument>
         </arguments>
     </virtualType>
     <type name="Magento\Theme\Block\Html\Topmenu">
