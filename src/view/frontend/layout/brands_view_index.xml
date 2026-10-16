@@ -23,11 +23,6 @@
         <css src="Mage360_Brands::css/brands.css"/>
     </head>
     <body>
-       <referenceContainer name="content">
-
-            <block class="Mage360\Brands\Block\View" name="Brands.Brand" template="Mage360_Brands::view.phtml"/>
-        </referenceContainer>
-
         <attribute name="class" value="page-with-filter"/>
         <referenceContainer name="sidebar.main">
             <block class="Mage360\Brands\Block\Navigation\Brandsproductnavigation" name="catalog.leftnav" before="-" template="Magento_LayeredNavigation::layer/view.phtml">
@@ -41,7 +36,7 @@
         </referenceContainer>
         <referenceContainer name="content">
             <block class="Mage360\Brands\Block\View" name="Brands.Brand" template="Mage360_Brands::view.phtml"/>
-            <block class="Mage360\Brands\Block\Product\CustomList" name="custom.products.list" as="product_list" template="Magento_Catalog::product/list.phtml">
+            <block class="Magento\Catalog\Block\Product\ListProduct" name="custom.products.list" as="product_list" template="Magento_Catalog::product/list.phtml">
                 <container name="category.product.list.additional" as="additional" />
                 <block class="Magento\Framework\View\Element\RendererList" name="category.product.type.details.renderers" as="details.renderers">
                     <block class="Magento\Framework\View\Element\Template" as="default"/>
