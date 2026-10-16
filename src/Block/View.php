@@ -19,7 +19,7 @@ declare(strict_types=1);
 
 namespace Mage360\Brands\Block;
 
-use Magento\Backend\Block\Template\Context;
+use Magento\Framework\View\Element\Template\Context;
 use Mage360\Brands\Model\Brands as BrandsModel;
 use Mage360\Brands\Model\ResourceModel\Brands\CollectionFactory as BrandsCollectionFactory;
 use Mage360\Brands\Model\ResourceModel\Brands\Collection;
